@@ -1,0 +1,50 @@
+﻿@page "/"
+
+<InputFile OnChange="@OnInputFileChange" />
+<div class="progress">
+    <div class="progress-bar" role="progressbar" style="@($"width: { progressBar }%")" aria-valuenow="@progressBar" aria-valuemin="0" aria-valuemax="100"></div>
+</div>
+
+
+@if (imageDataUrls.Count > 0)
+{
+    <h4>Images</h4>
+
+    <div class="card" style="width:30rem;">
+        <div class="card-body">
+            @foreach (var imageDataUrl in imageDataUrls)
+            {
+                <img class="rounded m-1" src="@imageDataUrl" />
+            }
+        </div>
+    </div>
+}
+
+<h1>@progressBar</h1>
+
+@code {
+    IList<string> imageDataUrls = new List<string>();
+    string progressBar = "";
+    int progressBarInt = 0;
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+
+        var maxAllowedFiles = 1;
+        var format = "image/*";
+
+
+        foreach (var imageFile in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            progressBarInt = 0;
+            progressBar = "";
+            var resizedImageFile = await imageFile.RequestImageFileAsync(format, 100, 100);
+            var buffer = new byte[resizedImageFile.Size];
+            Stream stream = resizedImageFile.OpenReadStream();
+            progressBarInt = await stream.ReadAsync(buffer);
+            progressBar = (100.0 * progressBarInt / stream.Length).ToString("0");
+            var imageDataUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+            imageDataUrls.Add(imageDataUrl);
+        }
+    }
+}
